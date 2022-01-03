@@ -5,7 +5,9 @@
 [![Code style: Standard](https://img.shields.io/badge/code%20style-Standard-blue.svg)]()
 [![License: BSD-3 ](https://img.shields.io/badge/License-BSD%203-blue.svg)](https://github.com/mrinjamul/go-timeago/blob/main/LICENSE)
 
-A time difference calculation library that will return a string with difference of words.
+## What is this?
+
+A go module to calculate the time difference between two dates and return the value in words.
 
 No third-party library used.
 

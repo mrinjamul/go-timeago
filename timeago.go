@@ -1,4 +1,5 @@
-/*Package timeago ...
+/*
+Package timeago ...
 timeago will evaluate time and return that time in words.
 
 Example: an hour ago, a moment ago etc.
@@ -17,6 +18,10 @@ func FormatNow(past time.Time) (string, error) {
 	if past.IsZero() {
 		return "", errors.New("no date has been set")
 	}
+	// If time is in future, return an error with a message.
+	if time.Now().Before(past) {
+		return "", errors.New("date is in future")
+	}
 	now := time.Now()
 	msg, err := Format(now, past)
 	if err != nil {
@@ -28,90 +33,65 @@ func FormatNow(past time.Time) (string, error) {
 // Format takes current and previous time and return that time in words.
 func Format(now, past time.Time) (string, error) {
 	// If time is zero, return an error with a message.
-	if now.IsZero() || past.IsZero() {
+	if past.IsZero() {
 		return "", errors.New("no date has been set")
 	}
-	msg := ""
-	seconds := toSeconds(now) - toSeconds(past)
-	minutes := toMinutes(now) - toMinutes(past)
-	hours := toHours(now) - toHours(past)
-	days := toDays(now) - toDays(past)
-	// create absolute values
-	seconds = abs(seconds)
-	minutes = abs(minutes)
-	hours = abs(hours)
-	days = abs(days)
-
-	if days > 0 && days < 30 {
-		if days > 1 {
-			msg = strconv.Itoa(int(days)) + " days ago"
-		} else {
-			msg = "yesterday"
-		}
-	} else if days >= 30 && days < 365 {
-		months := days / 30
-		if months > 1 {
-			msg = strconv.Itoa(int(months)) + " months ago"
-		} else {
-			msg = "a month ago"
-		}
-	} else if days >= 365 {
-		years := days / 365
-		if years > 1 {
-			msg = strconv.Itoa(int(years)) + " years ago"
-		} else {
-			msg = "a year ago"
-		}
-	} else if days == 0 && hours > 0 {
-		if hours > 1 {
-			msg = strconv.Itoa(int(hours)) + " hours ago"
-		} else {
-			msg = "an hour ago"
-		}
-	} else if hours == 0 && minutes > 0 {
-		if minutes > 1 {
-			msg = strconv.Itoa(int(minutes)) + " minutes ago"
-		} else {
-			msg = "a minute ago"
-		}
-	} else if minutes == 0 && seconds > 0 {
-		if seconds > 1 {
-			msg = strconv.Itoa(int(seconds)) + " seconds ago"
-		} else {
-			msg = "a second ago"
-		}
-	} else {
-		msg = "a moment ago"
-
+	// If time is in future, return an error with a message.
+	if now.Before(past) {
+		return "", errors.New("date is in future")
 	}
-	return msg, nil
-}
-
-func toSeconds(t time.Time) int64 {
-	seconds := t.Unix()
-	return seconds
-}
-func toMinutes(t time.Time) int64 {
-	seconds := toSeconds(t)
-	minutes := seconds / 60
-	return minutes
-}
-
-func toHours(t time.Time) int64 {
-	minutes := toMinutes(t)
-	hours := minutes / 60
-	return hours
-}
-
-func toDays(t time.Time) int64 {
-	hours := toHours(t)
-	days := hours / 24
-	return days
-}
-
-func abs(x int64) int64 {
-	if x < 0 {
-		return -x
+	// If time is in past, return time in words.
+	// Get the difference between the two times.
+	diff := now.Sub(past)
+	// If difference is less than a second, return a moment ago.
+	if diff < time.Second {
+		return "a moment ago", nil
 	}
-	return x
+	// If difference is less than a minute, return seconds ago.
+	if diff < time.Minute {
+		if int(diff.Seconds()) == 1 {
+			return "a second ago", nil
+		}
+		return strconv.Itoa(int(diff.Seconds())) + " seconds ago", nil
+	}
+	// If difference is less than an hour, return minutes ago.
+	if diff < time.Hour {
+		if int(diff.Minutes()) == 1 {
+			return "a minute ago", nil
+		}
+		return strconv.Itoa(int(diff.Minutes())) + " minutes ago", nil
+	}
+	// If difference is less than a day, return hours ago.
+	if diff < 24*time.Hour {
+		if int(diff.Hours()) == 1 {
+			return "an hour ago", nil
+		}
+		return strconv.Itoa(int(diff.Hours())) + " hours ago", nil
+	}
+	// If difference is less than a week, return days ago.
+	if diff < 7*24*time.Hour {
+		if int(diff.Hours()/24) == 1 {
+			return "yesterday", nil
+		}
+		return strconv.Itoa(int(diff.Hours()/24)) + " days ago", nil
+	}
+	// If difference is less than a month, return weeks ago.
+	if diff < 30*24*time.Hour {
+		if int(diff.Hours()/24/7) == 1 {
+			return "a week ago", nil
+		}
+		return strconv.Itoa(int(diff.Hours()/24/7)) + " weeks ago", nil
+	}
+	// If difference is less than a year, return months ago.
+	if diff < 365*24*time.Hour {
+		if int(diff.Hours()/24/30) == 1 {
+			return "a month ago", nil
+		}
+		return strconv.Itoa(int(diff.Hours()/24/30)) + " months ago", nil
+	}
+	// If difference is more than a year, return years ago.
+	if int(diff.Hours()/24/365) == 1 {
+		return "a year ago", nil
+	}
+	return strconv.Itoa(int(diff.Hours()/24/365)) + " years ago", nil
 }
